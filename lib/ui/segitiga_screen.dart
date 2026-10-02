@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:decimal/decimal.dart';
 import '../controllers/segitiga_controller.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_text_field.dart';
@@ -7,7 +9,7 @@ import '../widgets/result_card.dart';
 // Enum jenis segitiga
 enum JenisSegitiga { samaKaki, samaSisi, sikuSiku }
 
-// Halaman perhitungan luas dan keliling segitiga
+// Halaman perhitungan luas dan keliling segitiga QA
 class SegitigaScreen extends StatefulWidget {
   const SegitigaScreen({super.key});
 
@@ -28,6 +30,31 @@ class _SegitigaScreenState extends State<SegitigaScreen> {
 
   SegitigaResult? _result;
 
+  // Validator input QA (Batas 12 digit angka sebelum desimal)
+  String? _validateInput(String? value, String label) {
+    if (value == null || value.trim().isEmpty) {
+      return '$label tidak boleh kosong';
+    }
+
+    final cleaned = value.trim().replaceAll(',', '.');
+    final parts = cleaned.split('.');
+    final integerPart = parts[0].replaceAll(RegExp(r'\D'), '');
+
+    if (integerPart.length > 12) {
+      return 'Maksimal 12 digit angka sebelum koma/desimal';
+    }
+
+    try {
+      final Decimal dec = Decimal.parse(cleaned);
+      if (dec <= Decimal.zero) {
+        return 'Masukkan angka positif yang valid';
+      }
+    } catch (_) {
+      return 'Format angka tidak valid';
+    }
+    return null;
+  }
+
   // Menjalankan kalkulasi luas dan keliling segitiga
   void _calculate() {
     if (_formKey.currentState!.validate()) {
@@ -36,20 +63,20 @@ class _SegitigaScreenState extends State<SegitigaScreen> {
       switch (_selectedJenis) {
         case JenisSegitiga.samaKaki:
           res = _controller.hitungSamaKaki(
-            alas: double.parse(_alasController.text),
-            sisiSama: double.parse(_sisiSamaController.text),
-            tinggi: double.parse(_tinggiController.text),
+            alasStr: _alasController.text.trim(),
+            sisiSamaStr: _sisiSamaController.text.trim(),
+            tinggiStr: _tinggiController.text.trim(),
           );
           break;
         case JenisSegitiga.samaSisi:
           res = _controller.hitungSamaSisi(
-            sisi: double.parse(_sisiSamaSisiController.text),
+            sisiStr: _sisiSamaSisiController.text.trim(),
           );
           break;
         case JenisSegitiga.sikuSiku:
           res = _controller.hitungSikuSiku(
-            alas: double.parse(_alasController.text),
-            tinggi: double.parse(_tinggiController.text),
+            alasStr: _alasController.text.trim(),
+            tinggiStr: _tinggiController.text.trim(),
           );
           break;
       }
@@ -84,7 +111,7 @@ class _SegitigaScreenState extends State<SegitigaScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Kalkulator Segitiga'),
+        title: const Text('Kalkulator Segitiga QA'),
         backgroundColor: Colors.teal,
         foregroundColor: Colors.white,
       ),
@@ -135,57 +162,81 @@ class _SegitigaScreenState extends State<SegitigaScreen> {
 
               const SizedBox(height: 24.0),
 
-              // Input Sesuai Jenis Segitiga
+              // Input Sesuai Jenis Segitiga dengan QA 12 Digit Sebelum Koma
               if (_selectedJenis == JenisSegitiga.samaSisi) ...[
                 CustomTextField(
                   controller: _sisiSamaSisiController,
                   label: 'Panjang Sisi (cm)',
-                  hint: 'Masukkan panjang sisi',
+                  hint: 'Masukkan sisi (Maks 12 digit sebelum koma)',
                   icon: Icons.straighten,
-                  keyboardType: TextInputType.number,
-                  validator: _validateNumber,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d*[.,]?\d*')),
+                    Integer12DigitLimitingFormatter(maxIntegerDigits: 12),
+                  ],
+                  validator: (val) => _validateInput(val, 'Panjang sisi'),
                 ),
               ] else if (_selectedJenis == JenisSegitiga.samaKaki) ...[
                 CustomTextField(
                   controller: _alasController,
                   label: 'Panjang Alas (cm)',
-                  hint: 'Masukkan panjang alas',
+                  hint: 'Masukkan alas (Maks 12 digit sebelum koma)',
                   icon: Icons.square_foot,
-                  keyboardType: TextInputType.number,
-                  validator: _validateNumber,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d*[.,]?\d*')),
+                    Integer12DigitLimitingFormatter(maxIntegerDigits: 12),
+                  ],
+                  validator: (val) => _validateInput(val, 'Panjang alas'),
                 ),
                 CustomTextField(
                   controller: _sisiSamaController,
                   label: 'Panjang Sisi Sama Kaki (cm)',
-                  hint: 'Masukkan panjang sisi sama kaki',
+                  hint: 'Masukkan sisi sama kaki (Maks 12 digit sebelum koma)',
                   icon: Icons.straighten,
-                  keyboardType: TextInputType.number,
-                  validator: _validateNumber,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d*[.,]?\d*')),
+                    Integer12DigitLimitingFormatter(maxIntegerDigits: 12),
+                  ],
+                  validator: (val) => _validateInput(val, 'Sisi sama kaki'),
                 ),
                 CustomTextField(
                   controller: _tinggiController,
                   label: 'Tinggi Segitiga (cm)',
-                  hint: 'Masukkan tinggi segitiga',
+                  hint: 'Masukkan tinggi (Maks 12 digit sebelum koma)',
                   icon: Icons.height,
-                  keyboardType: TextInputType.number,
-                  validator: _validateNumber,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d*[.,]?\d*')),
+                    Integer12DigitLimitingFormatter(maxIntegerDigits: 12),
+                  ],
+                  validator: (val) => _validateInput(val, 'Tinggi segitiga'),
                 ),
               ] else if (_selectedJenis == JenisSegitiga.sikuSiku) ...[
                 CustomTextField(
                   controller: _alasController,
                   label: 'Panjang Alas (cm)',
-                  hint: 'Masukkan panjang alas',
+                  hint: 'Masukkan alas (Maks 12 digit sebelum koma)',
                   icon: Icons.square_foot,
-                  keyboardType: TextInputType.number,
-                  validator: _validateNumber,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d*[.,]?\d*')),
+                    Integer12DigitLimitingFormatter(maxIntegerDigits: 12),
+                  ],
+                  validator: (val) => _validateInput(val, 'Panjang alas'),
                 ),
                 CustomTextField(
                   controller: _tinggiController,
                   label: 'Tinggi Segitiga (cm)',
-                  hint: 'Masukkan tinggi segitiga',
+                  hint: 'Masukkan tinggi (Maks 12 digit sebelum koma)',
                   icon: Icons.height,
-                  keyboardType: TextInputType.number,
-                  validator: _validateNumber,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'^\d*[.,]?\d*')),
+                    Integer12DigitLimitingFormatter(maxIntegerDigits: 12),
+                  ],
+                  validator: (val) => _validateInput(val, 'Tinggi segitiga'),
                 ),
               ],
 
@@ -196,7 +247,7 @@ class _SegitigaScreenState extends State<SegitigaScreen> {
                 children: [
                   Expanded(
                     child: CustomButton(
-                      label: 'Hitung Luas & Keliling',
+                      label: 'Hitung Presisi Murni',
                       icon: Icons.calculate,
                       backgroundColor: Colors.teal,
                       onPressed: _calculate,
@@ -223,7 +274,7 @@ class _SegitigaScreenState extends State<SegitigaScreen> {
 
               const SizedBox(height: 24.0),
 
-              // Hasil perhitungan
+              // Hasil perhitungan responsif
               if (_result != null)
                 ResultCard(
                   title: 'Hasil ${_result!.deskripsi}',
@@ -232,13 +283,13 @@ class _SegitigaScreenState extends State<SegitigaScreen> {
                   items: [
                     _buildResultRow(
                       'Luas Segitiga',
-                      '${_result!.luas.toStringAsFixed(2)} cm²',
+                      '${_result!.luas} cm²',
                       isHighlight: true,
                     ),
                     const SizedBox(height: 8.0),
                     _buildResultRow(
                       'Keliling Segitiga',
-                      '${_result!.keliling.toStringAsFixed(2)} cm',
+                      '${_result!.keliling} cm',
                       isHighlight: true,
                     ),
                   ],
@@ -250,38 +301,50 @@ class _SegitigaScreenState extends State<SegitigaScreen> {
     );
   }
 
-  // Validator input angka
-  String? _validateNumber(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Input tidak boleh kosong';
-    }
-    if (double.tryParse(value) == null || double.parse(value) <= 0) {
-      return 'Masukkan angka positif yang valid';
-    }
-    return null;
-  }
-
-  // Baris item hasil
+  // Widget helper baris hasil responsif tanpa overflow
   Widget _buildResultRow(String label, String value, {bool isHighlight = false}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
             style: TextStyle(
-              fontSize: isHighlight ? 16.0 : 14.0,
-              fontWeight: isHighlight ? FontWeight.bold : FontWeight.normal,
-              color: isHighlight ? Colors.teal : Colors.black87,
+              fontSize: isHighlight ? 14.0 : 13.0,
+              fontWeight: isHighlight ? FontWeight.bold : FontWeight.w500,
+              color: isHighlight ? Colors.teal : Colors.grey.shade700,
             ),
           ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: isHighlight ? 16.0 : 14.0,
-              fontWeight: FontWeight.bold,
-              color: isHighlight ? Colors.teal : Colors.black87,
+          const SizedBox(height: 4.0),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 10.0),
+            decoration: BoxDecoration(
+              color: isHighlight
+                  ? Colors.teal.withValues(alpha: 0.08)
+                  : Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(10.0),
+              border: Border.all(
+                color: isHighlight
+                    ? Colors.teal.withValues(alpha: 0.2)
+                    : Colors.grey.shade300,
+              ),
+            ),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: isHighlight ? 16.0 : 14.0,
+                    fontWeight: FontWeight.bold,
+                    color: isHighlight ? Colors.teal : Colors.black87,
+                  ),
+                ),
+              ),
             ),
           ),
         ],

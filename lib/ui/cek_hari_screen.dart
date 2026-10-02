@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../controllers/day_controller.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/result_card.dart';
 
-// Halaman pemeriksaan nama hari berdasarkan nomor
+// Halaman pemeriksaan nama hari QA rentang 1-7
 class CekHariScreen extends StatefulWidget {
   const CekHariScreen({super.key});
 
@@ -19,17 +20,28 @@ class _CekHariScreenState extends State<CekHariScreen> {
 
   DayResult? _result;
 
-  // Menjalankan cek hari dari nomor input
+  // Validator input QA (Hanya boleh rentang 1 sampai 7)
+  String? _validateInput(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Nomor hari tidak boleh kosong';
+    }
+    final int? val = int.tryParse(value.trim());
+    if (val == null || val < 1 || val > 7) {
+      return 'Hanya boleh input angka 1-7';
+    }
+    return null;
+  }
+
+  // Menjalankan cek hari dari nomor input 1-7
   void _checkDay() {
     if (_formKey.currentState!.validate()) {
-      final int angka = int.parse(_numberController.text);
       setState(() {
-        _result = _controller.cekHari(angka);
+        _result = _controller.cekHari(_numberController.text.trim());
       });
     }
   }
 
-  // Mengisi nomor preset hari
+  // Mengisi nomor preset hari (1-7)
   void _setPreset(int nomor) {
     _numberController.text = nomor.toString();
     _checkDay();
@@ -53,7 +65,7 @@ class _CekHariScreenState extends State<CekHariScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Cek Nama Hari'),
+        title: const Text('Cek Nama Hari QA'),
         backgroundColor: Colors.purple,
         foregroundColor: Colors.white,
       ),
@@ -74,28 +86,24 @@ class _CekHariScreenState extends State<CekHariScreen> {
               ),
               const SizedBox(height: 8.0),
               Text(
-                'Masukkan nomor urut hari (1 = Senin, 2 = Selasa, dst.) untuk melihat nama harinya.',
+                'Masukkan nomor hari dari 1 (Senin) sampai 7 (Minggu).',
                 style: TextStyle(color: Colors.grey.shade600),
               ),
               const SizedBox(height: 20.0),
 
-              // Input nomor hari
+              // Input nomor hari dengan QA Rentang 1-7 dan Limit 1 Digit
               CustomTextField(
                 controller: _numberController,
-                label: 'Nomor Hari (Contoh: 1, 2, ..., 7)',
-                hint: 'Masukkan angka (1 - 7)',
+                label: 'Nomor Hari (1 - 7)',
+                hint: 'Masukkan angka 1-7',
                 icon: Icons.pin,
                 keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Nomor hari tidak boleh kosong';
-                  }
-                  final int? val = int.tryParse(value);
-                  if (val == null || val <= 0) {
-                    return 'Masukkan bilangan bulat positif yang valid';
-                  }
-                  return null;
-                },
+                maxLength: 1,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(1),
+                ],
+                validator: _validateInput,
               ),
 
               const SizedBox(height: 8.0),
@@ -156,27 +164,51 @@ class _CekHariScreenState extends State<CekHariScreen> {
 
               const SizedBox(height: 24.0),
 
-              // Kartu hasil pemeriksaan
+              // Kartu hasil pemeriksaan responsif tanpa overflow
               if (_result != null)
                 ResultCard(
                   title: 'Hasil Pemeriksaan Hari',
                   icon: Icons.calendar_today,
                   accentColor: Colors.purple,
                   items: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Nomor Input: ${_result!.nomor}',
-                              style: TextStyle(
-                                fontSize: 13.0,
-                                color: Colors.grey.shade600,
+                        Text(
+                          'Nomor Input:',
+                          style: TextStyle(
+                            fontSize: 13.0,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                        const SizedBox(height: 4.0),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                          decoration: BoxDecoration(
+                            color: Colors.purple.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(8.0),
+                          ),
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                _result!.nomor,
+                                style: const TextStyle(
+                                  fontSize: 18.0,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.purple,
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 4.0),
+                          ),
+                        ),
+                        const SizedBox(height: 12.0),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
                             Text(
                               _result!.namaHari,
                               style: const TextStyle(
@@ -185,11 +217,10 @@ class _CekHariScreenState extends State<CekHariScreen> {
                                 color: Colors.purple,
                               ),
                             ),
-                            const SizedBox(height: 4.0),
                             Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 10.0,
-                                vertical: 4.0,
+                                horizontal: 12.0,
+                                vertical: 6.0,
                               ),
                               decoration: BoxDecoration(
                                 color: Colors.purple.withValues(alpha: 0.1),
@@ -205,18 +236,6 @@ class _CekHariScreenState extends State<CekHariScreen> {
                               ),
                             ),
                           ],
-                        ),
-                        CircleAvatar(
-                          radius: 32.0,
-                          backgroundColor: Colors.purple.withValues(alpha: 0.12),
-                          child: Text(
-                            '${_result!.nomor}',
-                            style: const TextStyle(
-                              fontSize: 24.0,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.purple,
-                            ),
-                          ),
                         ),
                       ],
                     ),

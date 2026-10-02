@@ -1,11 +1,12 @@
-import 'dart:math';
+import 'package:decimal/decimal.dart';
+import '../helpers/number_helper.dart';
 
-// Struktur data hasil perhitungan piramida
+// Data hasil perhitungan piramida murni Decimal tanpa double
 class PiramidaResult {
-  final double volume;
-  final double kelilingAlas;
-  final double totalRusuk;
-  final double luasPermukaan;
+  final String volume;
+  final String kelilingAlas;
+  final String totalRusuk;
+  final String luasPermukaan;
 
   PiramidaResult({
     required this.volume,
@@ -15,33 +16,42 @@ class PiramidaResult {
   });
 }
 
-// Controller logika bisnis perhitungan piramida
+// Controller logika bisnis perhitungan piramida murni Decimal tanpa double
 class PiramidaController {
-  // Menhitung volume dan keliling piramida alas persegi
+  // Perhitungan volume dan keliling piramida murni Decimal
   PiramidaResult hitungPiramida({
-    required double sisiAlas,
-    required double tinggi,
+    required String sisiAlasStr,
+    required String tinggiStr,
   }) {
-    // Menghitung volume piramida
-    final double volume = (1.0 / 3.0) * pow(sisiAlas, 2) * tinggi;
+    final Decimal s = Decimal.parse(sisiAlasStr.replaceAll(',', '.'));
+    final Decimal t = Decimal.parse(tinggiStr.replaceAll(',', '.'));
 
-    // Menghitung keliling alas
-    final double kelilingAlas = 4 * sisiAlas;
+    // Luas alas presisi tinggi Decimal
+    final Decimal luasAlas = s * s;
 
-    // Menghitung tinggi miring selimut
-    final double tinggiMiring = sqrt(pow(sisiAlas / 2.0, 2) + pow(tinggi, 2));
+    // Perhitungan volume tanpa double
+    final Decimal volumeDecimal = ((luasAlas * t) / Decimal.fromInt(3))
+        .toDecimal(scaleOnInfinitePrecision: 4);
 
-    // Menghitung total keliling rusuk
-    final double totalRusuk = (4 * sisiAlas) + (4 * tinggiMiring);
+    // Perhitungan keliling alas tanpa double
+    final Decimal kelilingAlasDecimal = Decimal.fromInt(4) * s;
 
-    // Menghitung luas permukaan
-    final double luasPermukaan = pow(sisiAlas, 2) + (2 * sisiAlas * tinggiMiring);
+    // Perhitungan tinggi miring selimut tanpa double
+    final Decimal sHalf = (s / Decimal.fromInt(2)).toDecimal(scaleOnInfinitePrecision: 6);
+    final Decimal inner = (sHalf * sHalf) + (t * t);
+    final Decimal tinggiMiring = NumberHelper.decimalSqrt(inner, scale: 4);
+
+    // Perhitungan total panjang rusuk tanpa double
+    final Decimal totalRusukDecimal = (Decimal.fromInt(4) * s) + (Decimal.fromInt(4) * tinggiMiring);
+
+    // Perhitungan luas permukaan tanpa double
+    final Decimal luasPermukaanDecimal = luasAlas + (Decimal.fromInt(2) * s * tinggiMiring);
 
     return PiramidaResult(
-      volume: volume,
-      kelilingAlas: kelilingAlas,
-      totalRusuk: totalRusuk,
-      luasPermukaan: luasPermukaan,
+      volume: NumberHelper.formatNumber(volumeDecimal.toString()),
+      kelilingAlas: NumberHelper.formatNumber(kelilingAlasDecimal.toString()),
+      totalRusuk: NumberHelper.formatNumber(totalRusukDecimal.toString()),
+      luasPermukaan: NumberHelper.formatNumber(luasPermukaanDecimal.toString()),
     );
   }
 }

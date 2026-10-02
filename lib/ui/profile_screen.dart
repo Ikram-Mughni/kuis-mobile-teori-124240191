@@ -73,19 +73,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           radius: 54.0,
                           backgroundColor: Colors.indigo.shade100,
                           child: ClipOval(
-                            child: Image.network(
-                              user.fotoUrl,
-                              width: 108.0,
-                              height: 108.0,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return const Icon(
-                                  Icons.person,
-                                  size: 60.0,
-                                  color: Colors.indigo,
-                                );
-                              },
-                            ),
+                            child: user.fotoUrl.startsWith('http')
+                                ? Image.network(
+                                    user.fotoUrl,
+                                    width: 108.0,
+                                    height: 108.0,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return const Icon(
+                                        Icons.person,
+                                        size: 60.0,
+                                        color: Colors.indigo,
+                                      );
+                                    },
+                                  )
+                                : Image.asset(
+                                    user.fotoUrl,
+                                    width: 108.0,
+                                    height: 108.0,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return const Icon(
+                                        Icons.person,
+                                        size: 60.0,
+                                        color: Colors.indigo,
+                                      );
+                                    },
+                                  ),
                           ),
                         ),
                       ),

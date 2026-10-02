@@ -1,6 +1,8 @@
-// Model hasil penentuan nama hari
+import '../helpers/number_helper.dart';
+
+// Model hasil penentuan nama hari dengan BigInt
 class DayResult {
-  final int nomor;
+  final String nomor;
   final String namaHari;
   final String jenisHari;
   final String deskripsi;
@@ -13,9 +15,8 @@ class DayResult {
   });
 }
 
-// Controller logika bisnis pemeriksaan hari
+// Controller logika bisnis pemeriksaan hari BigInt tanpa double
 class DayController {
-  // Daftar nama hari (1 = Senin ... 7 = Minggu)
   final List<String> _daftarHari = [
     "Senin",
     "Selasa",
@@ -26,17 +27,20 @@ class DayController {
     "Minggu",
   ];
 
-  // Mendapatkan data hari berdasarkan nomor input
-  DayResult cekHari(int angka) {
-    if (angka < 1) {
+  // Mendapatkan data hari dari angka BigInt
+  DayResult cekHari(String inputStr) {
+    // Parsing ke BigInt murni
+    final BigInt angka = BigInt.parse(inputStr);
+
+    if (angka <= BigInt.zero) {
       throw ArgumentError("Nomor hari harus lebih besar dari 0");
     }
 
-    // Menghitung indeks siklus hari
-    final int index = (angka - 1) % 7;
+    // Modulo siklus 7 hari dengan BigInt
+    final BigInt indexBig = (angka - BigInt.one) % BigInt.from(7);
+    final int index = indexBig.toInt();
     final String namaHari = _daftarHari[index];
 
-    // Menentukan status hari kerja atau akhir pekan
     final bool isWeekend = (index == 5 || index == 6);
     final String jenisHari = isWeekend ? "Akhir Pekan (Weekend)" : "Hari Kerja (Weekday)";
     final String deskripsi = isWeekend
@@ -44,7 +48,7 @@ class DayController {
         : "Tetap produktif dan jalani hari dengan penuh semangat.";
 
     return DayResult(
-      nomor: angka,
+      nomor: NumberHelper.formatNumber(angka.toString()),
       namaHari: namaHari,
       jenisHari: jenisHari,
       deskripsi: deskripsi,

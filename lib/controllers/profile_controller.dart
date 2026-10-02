@@ -12,11 +12,11 @@ class ProfileController {
     }
 
     return UserModel(
-      nama: "Mahasiswa / Developer",
+      nama: "Muhammad Ikram Mughni",
       nim: "124240191",
-      tempatTanggalLahir: "Yogyakarta, 15 Januari 2004",
-      hobi: "Coding, Membaca Buku, dan Desain UI/UX",
-      fotoUrl: "https://picsum.photos/seed/124240191/300/300",
+      tempatTanggalLahir: "Banjarmasin, 11 Juli 2006",
+      hobi: "Coding, Menonton Film, dan Olahraga",
+      fotoUrl: "assets/profile.jpg",
     );
   }
 }

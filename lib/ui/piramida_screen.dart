@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:decimal/decimal.dart';
 import '../controllers/piramida_controller.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/result_card.dart';
 
-// Halaman perhitungan volume dan keliling piramida
+// Halaman perhitungan volume dan keliling piramida QA
 class PiramidaScreen extends StatefulWidget {
   const PiramidaScreen({super.key});
 
@@ -20,16 +22,38 @@ class _PiramidaScreenState extends State<PiramidaScreen> {
 
   PiramidaResult? _result;
 
+  // Validator input QA (Batas 12 digit angka sebelum desimal)
+  String? _validateInput(String? value, String label) {
+    if (value == null || value.trim().isEmpty) {
+      return '$label tidak boleh kosong';
+    }
+
+    final cleaned = value.trim().replaceAll(',', '.');
+    final parts = cleaned.split('.');
+    final integerPart = parts[0].replaceAll(RegExp(r'\D'), '');
+
+    if (integerPart.length > 12) {
+      return 'Maksimal 12 digit angka sebelum koma/desimal';
+    }
+
+    try {
+      final Decimal dec = Decimal.parse(cleaned);
+      if (dec <= Decimal.zero) {
+        return 'Masukkan angka positif yang valid';
+      }
+    } catch (_) {
+      return 'Format angka tidak valid';
+    }
+    return null;
+  }
+
   // Menjalankan kalkulasi volume dan keliling
   void _calculate() {
     if (_formKey.currentState!.validate()) {
-      final double alas = double.parse(_alasController.text);
-      final double tinggi = double.parse(_tinggiController.text);
-
       setState(() {
         _result = _controller.hitungPiramida(
-          sisiAlas: alas,
-          tinggi: tinggi,
+          sisiAlasStr: _alasController.text.trim(),
+          tinggiStr: _tinggiController.text.trim(),
         );
       });
     }
@@ -55,7 +79,7 @@ class _PiramidaScreenState extends State<PiramidaScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Kalkulator Piramida'),
+        title: const Text('Kalkulator Piramida QA'),
         backgroundColor: Colors.indigo,
         foregroundColor: Colors.white,
       ),
@@ -76,7 +100,7 @@ class _PiramidaScreenState extends State<PiramidaScreen> {
               ),
               const SizedBox(height: 8.0),
               Text(
-                'Hitung volume, keliling alas, total rusuk, dan luas permukaan piramida.',
+                'Kalkulasi presisi murni Decimal (Maksimal 12 digit sebelum koma).',
                 style: TextStyle(color: Colors.grey.shade600),
               ),
               const SizedBox(height: 20.0),
@@ -85,36 +109,28 @@ class _PiramidaScreenState extends State<PiramidaScreen> {
               CustomTextField(
                 controller: _alasController,
                 label: 'Panjang Sisi Alas (cm)',
-                hint: 'Masukkan panjang sisi alas',
+                hint: 'Masukkan sisi alas (Maks 12 digit sebelum koma)',
                 icon: Icons.square_foot,
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Sisi alas tidak boleh kosong';
-                  }
-                  if (double.tryParse(value) == null || double.parse(value) <= 0) {
-                    return 'Masukkan angka positif yang valid';
-                  }
-                  return null;
-                },
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d*[.,]?\d*')),
+                  Integer12DigitLimitingFormatter(maxIntegerDigits: 12),
+                ],
+                validator: (val) => _validateInput(val, 'Sisi alas'),
               ),
 
               // Input tinggi piramida
               CustomTextField(
                 controller: _tinggiController,
                 label: 'Tinggi Piramida (cm)',
-                hint: 'Masukkan tinggi piramida',
+                hint: 'Masukkan tinggi (Maks 12 digit sebelum koma)',
                 icon: Icons.height,
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Tinggi piramida tidak boleh kosong';
-                  }
-                  if (double.tryParse(value) == null || double.parse(value) <= 0) {
-                    return 'Masukkan angka positif yang valid';
-                  }
-                  return null;
-                },
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d*[.,]?\d*')),
+                  Integer12DigitLimitingFormatter(maxIntegerDigits: 12),
+                ],
+                validator: (val) => _validateInput(val, 'Tinggi piramida'),
               ),
 
               const SizedBox(height: 12.0),
@@ -124,7 +140,7 @@ class _PiramidaScreenState extends State<PiramidaScreen> {
                 children: [
                   Expanded(
                     child: CustomButton(
-                      label: 'Hitung',
+                      label: 'Hitung Presisi Murni',
                       icon: Icons.calculate,
                       onPressed: _calculate,
                     ),
@@ -150,7 +166,7 @@ class _PiramidaScreenState extends State<PiramidaScreen> {
 
               const SizedBox(height: 24.0),
 
-              // Kartu hasil kalkulasi
+              // Kartu hasil kalkulasi responsif
               if (_result != null)
                 ResultCard(
                   title: 'Hasil Perhitungan Piramida',
@@ -158,23 +174,23 @@ class _PiramidaScreenState extends State<PiramidaScreen> {
                   items: [
                     _buildResultRow(
                       'Volume Piramida',
-                      '${_result!.volume.toStringAsFixed(2)} cm³',
+                      '${_result!.volume} cm³',
                       isHighlight: true,
                     ),
                     const SizedBox(height: 8.0),
                     _buildResultRow(
                       'Keliling Alas',
-                      '${_result!.kelilingAlas.toStringAsFixed(2)} cm',
+                      '${_result!.kelilingAlas} cm',
                     ),
                     const SizedBox(height: 8.0),
                     _buildResultRow(
                       'Total Panjang Rusuk',
-                      '${_result!.totalRusuk.toStringAsFixed(2)} cm',
+                      '${_result!.totalRusuk} cm',
                     ),
                     const SizedBox(height: 8.0),
                     _buildResultRow(
                       'Luas Permukaan',
-                      '${_result!.luasPermukaan.toStringAsFixed(2)} cm²',
+                      '${_result!.luasPermukaan} cm²',
                     ),
                   ],
                 ),
@@ -185,27 +201,50 @@ class _PiramidaScreenState extends State<PiramidaScreen> {
     );
   }
 
-  // Widget helper untuk baris hasil
+  // Widget helper baris hasil responsif tanpa overflow
   Widget _buildResultRow(String label, String value, {bool isHighlight = false}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
             style: TextStyle(
-              fontSize: isHighlight ? 16.0 : 14.0,
-              fontWeight: isHighlight ? FontWeight.bold : FontWeight.normal,
-              color: isHighlight ? Colors.indigo : Colors.black87,
+              fontSize: isHighlight ? 14.0 : 13.0,
+              fontWeight: isHighlight ? FontWeight.bold : FontWeight.w500,
+              color: isHighlight ? Colors.indigo : Colors.grey.shade700,
             ),
           ),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: isHighlight ? 16.0 : 14.0,
-              fontWeight: FontWeight.bold,
-              color: isHighlight ? Colors.indigo : Colors.black87,
+          const SizedBox(height: 4.0),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 10.0),
+            decoration: BoxDecoration(
+              color: isHighlight
+                  ? Colors.indigo.withValues(alpha: 0.08)
+                  : Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(10.0),
+              border: Border.all(
+                color: isHighlight
+                    ? Colors.indigo.withValues(alpha: 0.2)
+                    : Colors.grey.shade300,
+              ),
+            ),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: isHighlight ? 16.0 : 14.0,
+                    fontWeight: FontWeight.bold,
+                    color: isHighlight ? Colors.indigo : Colors.black87,
+                  ),
+                ),
+              ),
             ),
           ),
         ],
